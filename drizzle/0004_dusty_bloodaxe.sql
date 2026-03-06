@@ -1,0 +1,1 @@
+ALTER TABLE "revenue" ADD CONSTRAINT "revenue_month_unique" UNIQUE("month");

@@ -26,14 +26,6 @@ async function main() {
   }[]
   */
 
-  await db
-    .update(usersTable)
-    .set({
-      age: 31,
-    })
-    .where(eq(usersTable.email, user.email));
-  console.log('User info updated!')
-
   await db.delete(usersTable).where(eq(usersTable.email, user.email));
   console.log('User deleted!')
 }

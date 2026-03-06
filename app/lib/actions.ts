@@ -5,9 +5,10 @@ import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
 import {signIn} from '@/auth';
 import { AuthError} from 'next-auth';
+import { drizzle } from 'drizzle-orm/postgres-js';
 
-
-const sql = postgres(process.env.POSTGRES_URL!, {ssl: 'require'});
+const sql = postgres(process.env.POSTGRES_URL!);
+const db = drizzle(sql);
 
 const FormSchema = z.object({
     id: z.string(),
