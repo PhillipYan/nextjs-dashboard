@@ -11,18 +11,23 @@ const sql = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(sql);
 
 const FormSchema = z.object({
-    id: z.string(),
-    customerId: z.string({
-        invalid_type_error: 'Please select a customer.',
-    }),
-    amount: z.coerce.number().gt(0, { message: 'Please enter an amount greater than $0.' }),
-    status: z.enum(['pending', 'paid'], { invalid_type_error: 'Please select an invoice status.' }),
-    date: z.string(),
+  id: z.string(),
+  customerId: z.string({
+    invalid_type_error: 'Please select a customer.',
+  }),
+  amount: z.coerce.number().gt(0, { message: 'Please enter an amount greater than $0.' }),
+  status: z.enum(['pending', 'paid'], { invalid_type_error: 'Please select an invoice status.' }),
+  date: z.string(),
 });
 
-const UpdateInvoice = FormSchema.omit({ id: true, date: true});
-const CreateInvoice = FormSchema.omit({ id: true, date: true});
 
+
+const CustomerFormSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  image_url: z.string(),
+});
 
 export type State = {
   errors?: {
@@ -32,7 +37,23 @@ export type State = {
   };
   message?: string | null;
 };
- 
+
+export type CustomerState = {
+  errors?: {
+    name?: string[];
+    email?: string[];
+    image_url?: string[];
+  };
+  message?: string | null;
+};
+
+
+
+
+const UpdateInvoice = FormSchema.omit({ id: true, date: true});
+const CreateInvoice = FormSchema.omit({ id: true, date: true});
+const CreateCustomer = CustomerFormSchema.omit({ id: true });
+
 export async function createInvoice(prevState: State, formData: FormData) {
   // Validate form using Zod
   const validatedFields = CreateInvoice.safeParse({
@@ -71,6 +92,39 @@ export async function createInvoice(prevState: State, formData: FormData) {
   revalidatePath('/dashboard/invoices');
   redirect('/dashboard/invoices');
 }
+
+
+export async function createCustomer(prevState: CustomerState, formData: FormData) {
+  const validatedFields = CreateCustomer.safeParse({
+    name:formData.get('name'),
+    email: formData.get('email'),
+    image_url: formData.get('image_url'),
+  });
+
+  if (!validatedFields.success) {
+    return{
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Customer.',
+    };
+  }
+  
+  const { name, email, image_url } = validatedFields.data;
+
+  try{
+    await sql`
+    INSERT INTO customers (id, name, email, image_url)
+    VALUES (uuid_generate_v4(), ${name}, ${email}, ${image_url})`;
+
+  } catch (error) {
+    return {
+      message: 'Database Error: Failed to Create Customer.',
+    };
+  }
+  revalidatePath('/dashboard/customers');
+  redirect('dashboard/customers');  
+
+}
+
 
 
 
